@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserOperation {
+  id               String   @id @default(cuid())
+  userOpHash       String   @unique
+  sender           String
+  paymaster        String?
+  nonce            String
+  success          Boolean
+  actualGasCost    String
+  actualGasUsed    String
+  transactionHash  String
+  blockNumber      Int
+  timestamp        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([sender])
+  @@index([transactionHash])
+  @@index([blockNumber])
+  @@index([timestamp])
+}
+
+model SmartWallet {
+  id              String   @id @default(cuid())
+  address         String   @unique
+  owner           String
+  implementation  String
+  salt            String
+  deploymentTx    String?
+  isDeployed      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([owner])
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+  hash            String   @unique
+  from            String
+  to              String
+  value           String
+  data            String?
+  gasUsed         String
+  gasPrice        String
+  nonce           Int
+  blockNumber     Int
+  blockTimestamp  DateTime
+  status          Boolean
+  createdAt       DateTime @default(now())
+
+  @@index([from])
+  @@index([to])
+  @@index([blockNumber])
+}
+
+model PaymasterTransaction {
+  id              String   @id @default(cuid())
+  userOpHash      String   @unique
+  paymaster       String
+  token           String
+  tokenAmount     String
+  ethCost         String
+  exchangeRate    String
+  user            String
+  timestamp       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([paymaster])
+  @@index([user])
+  @@index([token])
+  @@index([timestamp])
+}
+
+model SystemStats {
+  id                    String   @id @default(cuid())
+  totalUserOps          Int      @default(0)
+  totalSmartWallets     Int      @default(0)
+  totalGasSponsored     String   @default("0")
+  totalTokensCollected  Json     @default("{}")
+  lastBlockProcessed    Int      @default(0)
+  updatedAt             DateTime @updatedAt
+}

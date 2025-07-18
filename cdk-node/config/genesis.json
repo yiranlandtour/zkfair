@@ -1,0 +1,49 @@
+{
+  "l1Config": {
+    "chainId": 11155111,
+    "polygonZkEVMAddress": "0x0000000000000000000000000000000000000000",
+    "polygonRollupManagerAddress": "0x0000000000000000000000000000000000000000",
+    "polTokenAddress": "0x0000000000000000000000000000000000000000",
+    "polygonZkEVMGlobalExitRootAddress": "0x0000000000000000000000000000000000000000"
+  },
+  "root": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "genesis": [{
+    "contractName": "PolygonZkEVMBridge",
+    "balance": "0",
+    "nonce": "0",
+    "address": "0x9d98deabc42dd696deb9e40b4f1cab7ddbf55988",
+    "bytecode": "",
+    "storage": {}
+  }],
+  "oldStateRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "batchL2Data": "",
+  "globalExitRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "timestamp": 1700000000,
+  "sequencer": "0x617b3a3528F9cDd6630fd3301B9c8911F7Bf063D",
+  "chainID": 67890,
+  "forkID": 8,
+  "consensusType": "PoS",
+  "rollupCreationBlockNumber": 0,
+  "rollupManagerCreationBlockNumber": 0,
+  "nativeToken": {
+    "name": "ZKFair Gas Token",
+    "symbol": "ZKG",
+    "decimals": 18
+  },
+  "celestiaConfig": {
+    "namespaceId": "0x74657374000000000000000000000000000000000000000000000000",
+    "endpoint": "http://localhost:26658",
+    "authToken": "",
+    "gasPrice": 0.002
+  },
+  "preAllocations": {
+    "0x617b3a3528F9cDd6630fd3301B9c8911F7Bf063D": {
+      "balance": "1000000000000000000000000",
+      "nonce": 0
+    },
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8": {
+      "balance": "1000000000000000000000000",
+      "nonce": 0
+    }
+  }
+}

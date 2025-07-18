@@ -1,0 +1,53 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - "alerts/*.yml"
+
+scrape_configs:
+  # CDK Node metrics
+  - job_name: 'cdk-node'
+    static_configs:
+      - targets: ['cdk-node:9090']
+    metrics_path: '/metrics'
+
+  # Bundler metrics
+  - job_name: 'bundler'
+    static_configs:
+      - targets: ['bundler:3001']
+    metrics_path: '/metrics'
+
+  # API metrics
+  - job_name: 'api'
+    static_configs:
+      - targets: ['api:4001']
+    metrics_path: '/metrics'
+
+  # PostgreSQL exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Node exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: 
+        - 'node-exporter-1:9100'
+        - 'node-exporter-2:9100'
+
+  # Celestia metrics
+  - job_name: 'celestia'
+    static_configs:
+      - targets: ['celestia-light:26660']

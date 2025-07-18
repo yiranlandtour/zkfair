@@ -1,0 +1,123 @@
+[Log]
+Environment = "development"
+Level = "debug"
+Outputs = ["stdout", "file"]
+FilePath = "/var/log/zkfair/node.log"
+
+[State]
+Type = "postgresql"
+User = "zkfair"
+Password = "zkfair123"
+Name = "zkfair_state"
+Host = "localhost"
+Port = "5432"
+EnableLog = false
+MaxConns = 50
+
+[Pool]
+Type = "postgresql"
+User = "zkfair"
+Password = "zkfair123"
+Name = "zkfair_pool"
+Host = "localhost"
+Port = "5432"
+EnableLog = false
+MaxConns = 50
+
+[Etherman]
+L1URL = "https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY"
+L2URLs = ["http://localhost:8545"]
+PoEAddr = "0x0000000000000000000000000000000000000000"
+MaticAddr = "0x0000000000000000000000000000000000000000"
+GlobalExitRootManAddr = "0x0000000000000000000000000000000000000000"
+MultiGasProvider = true
+Etherscan = "https://sepolia.etherscan.io"
+
+[Sequencer]
+WaitPeriodPoolIsEmpty = "1s"
+BlocksAmountForTxsToBeDeleted = 100
+FrequencyToCheckTxsForDelete = "12h"
+TxLifetimeCheckTimeout = "10m"
+MaxTxLifetime = "3h"
+MaxTxSizeForL1 = 131072
+L2Coinbase = "0x617b3a3528F9cDd6630fd3301B9c8911F7Bf063D"
+PrivateKey = {Path = "/pk/sequencer.key", Password = "password"}
+BatchMaxDeltaTimestamp = "120s"
+LoadPoolTxsCheckInterval = "500ms"
+StateConsistencyCheckInterval = "5s"
+
+[Aggregator]
+Host = "0.0.0.0"
+Port = 50081
+RetryTime = "5s"
+VerifyProofInterval = "90s"
+TxProfitabilityCheckerType = "acceptall"
+TxProfitabilityMinReward = "1.1"
+ProofStatePollingInterval = "5s"
+SenderAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+CleanupLockedProofsInterval = "2m"
+GeneratingProofCleanupThreshold = "10m"
+
+[RPC]
+Host = "0.0.0.0"
+Port = 8545
+ReadTimeout = "60s"
+WriteTimeout = "60s"
+MaxRequestsPerIPAndSecond = 5000
+SequencerNodeURI = ""
+EnableL2SuggestedGasPrice = true
+BatchRequestsEnabled = true
+BatchRequestsLimit = 20
+MaxLogsCount = 10000
+MaxLogsBlockRange = 10000
+MaxNativeBlockHashBlockRange = 60000
+WebSockets.Enabled = true
+WebSockets.Port = 8546
+
+[DataAvailability]
+Type = "celestia"
+CelestiaConfig.Endpoint = "http://localhost:26658"
+CelestiaConfig.NamespaceID = "0x74657374000000000000000000000000000000000000000000000000"
+CelestiaConfig.AuthToken = ""
+CelestiaConfig.NodeType = "light"
+CelestiaConfig.GasPrice = 0.002
+CelestiaConfig.MaxBlobSize = 2000000
+CelestiaConfig.SubmitTimeout = "60s"
+CelestiaConfig.ConfirmationTimeout = "300s"
+
+[L2GasPriceSuggester]
+Type = "follower"
+DefaultGasPriceWei = 1000000000
+MaxGasPriceWei = 0
+MaxPrice.File = "/etc/zkfair/gasprice/max_price.json"
+IgnorePrice = 0
+CheckBlocks = 10
+Percentile = 60
+UpdatePeriod = "10s"
+CleanHistoryPeriod = "1h"
+CleanHistoryTimeRetention = "5m"
+Factor = 0.15
+
+[Executor]
+MaxResourceExhaustedAttempts = 3
+WaitOnResourceExhaustion = "1s"
+MaxGRPCMessageSize = 100000000
+ExecutorClient.Host = "localhost"
+ExecutorClient.Port = 50071
+
+[BroadcastServer]
+Host = "0.0.0.0"
+Port = 61090
+
+[NetworkConfig]
+L2ChainID = 67890
+L2NetworkName = "ZKFair L2"
+L2BlockGasLimit = 30000000
+MaxCumulativeGasUsed = 30000000
+MaxBlockNumber = 0
+MaxLogsCount = 10000
+MaxLogsBlockRange = 10000
+MaxTxsPerBatch = 300
+MaxBatchBytesSize = 120000
+MaxExpirationTimeForTx = "5h"
+MaxSequentialBatchDelay = "2m"

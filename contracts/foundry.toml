@@ -1,0 +1,28 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.19"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = true
+int_types = "long"
+multiline_func_header = "all"
+quote_style = "double"
+number_underscore = "thousands"
+override_spacing = true
+
+[rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
+localhost = "http://localhost:8545"
+zkfair = "${ZKFAIR_RPC_URL}"

@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: zkfair
+      POSTGRES_PASSWORD: zkfair123
+      POSTGRES_MULTIPLE_DATABASES: zkfair_state,zkfair_pool,zkfair_api
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    ports:
+      - "5432:5432"
+    networks:
+      - zkfair-network
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass zkfair123
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - zkfair-network
+
+  celestia-light:
+    image: ghcr.io/celestiaorg/celestia-node:v0.11.0
+    command: celestia light start --core.ip consensus.celestia.org --p2p.network mocha
+    volumes:
+      - celestia_data:/home/celestia/.celestia-light-mocha-4
+    ports:
+      - "26658:26658"
+      - "26659:26659"
+    networks:
+      - zkfair-network
+
+  cdk-node:
+    build:
+      context: ./cdk-node
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - celestia-light
+    environment:
+      - CDK_CONFIG_PATH=/app/config/node.toml
+    volumes:
+      - ./cdk-node/config:/app/config
+      - cdk_data:/app/data
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+      - "50081:50081"
+    networks:
+      - zkfair-network
+
+  bundler:
+    build:
+      context: ./bundler
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - cdk-node
+    environment:
+      - NODE_ENV=development
+      - L2_RPC_URL=http://cdk-node:8545
+      - REDIS_URL=redis://:zkfair123@redis:6379
+      - ENTRY_POINT_ADDRESS=${ENTRY_POINT_ADDRESS}
+      - BUNDLER_PRIVATE_KEY=${BUNDLER_PRIVATE_KEY}
+    ports:
+      - "3000:3000"
+    networks:
+      - zkfair-network
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - cdk-node
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://zkfair:zkfair123@postgres:5432/zkfair_api
+      - L2_RPC_URL=http://cdk-node:8545
+      - ENTRY_POINT_ADDRESS=${ENTRY_POINT_ADDRESS}
+    ports:
+      - "4000:4000"
+    networks:
+      - zkfair-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_L2_RPC_URL=http://localhost:8545
+        - REACT_APP_BUNDLER_URL=http://localhost:3000
+        - REACT_APP_API_URL=http://localhost:4000/api
+        - REACT_APP_ENTRY_POINT_ADDRESS=${ENTRY_POINT_ADDRESS}
+        - REACT_APP_PAYMASTER_ADDRESS=${PAYMASTER_ADDRESS}
+        - REACT_APP_FACTORY_ADDRESS=${FACTORY_ADDRESS}
+        - REACT_APP_USDC_ADDRESS=${USDC_ADDRESS}
+    ports:
+      - "80:80"
+    networks:
+      - zkfair-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  celestia_data:
+  cdk_data:
+
+networks:
+  zkfair-network:
+    driver: bridge
