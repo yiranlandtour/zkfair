@@ -1,0 +1,117 @@
+groups:
+  - name: erc4337
+    interval: 30s
+    rules:
+      # Bundler alerts
+      - alert: BundlerOffline
+        expr: up{job="bundler"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: bundler
+        annotations:
+          summary: "Bundler is offline"
+          description: "ERC-4337 bundler service is down"
+
+      - alert: BundlerHighErrorRate
+        expr: rate(bundler_operations_failed[5m]) / rate(bundler_operations_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: bundler
+        annotations:
+          summary: "High bundler error rate"
+          description: "Bundler error rate is {{ $value | humanizePercentage }}"
+
+      - alert: BundlerSlowProcessing
+        expr: histogram_quantile(0.99, bundler_operation_duration_seconds) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: bundler
+        annotations:
+          summary: "Bundler processing is slow"
+          description: "99th percentile processing time is {{ $value }}s"
+
+      # Paymaster alerts
+      - alert: PaymasterLowBalance
+        expr: paymaster_eth_balance < 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: paymaster
+        annotations:
+          summary: "Paymaster ETH balance is low"
+          description: "Paymaster has only {{ $value }} ETH remaining"
+
+      - alert: PaymasterDepletedBalance
+        expr: paymaster_eth_balance < 0.1
+        for: 2m
+        labels:
+          severity: critical
+          component: paymaster
+        annotations:
+          summary: "Paymaster ETH balance critically low"
+          description: "Paymaster has only {{ $value }} ETH remaining"
+
+      - alert: PaymasterHighUsage
+        expr: rate(paymaster_operations_sponsored[5m]) > 100
+        for: 10m
+        labels:
+          severity: info
+          component: paymaster
+        annotations:
+          summary: "High paymaster usage"
+          description: "Paymaster is sponsoring {{ $value }} ops/sec"
+
+      - alert: PaymasterTokenOracleFailure
+        expr: paymaster_oracle_failures > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: paymaster
+        annotations:
+          summary: "Paymaster oracle failure"
+          description: "Token price oracle is failing"
+
+      # UserOperation metrics
+      - alert: UserOperationHighFailureRate
+        expr: rate(userop_validation_failed[5m]) / rate(userop_validation_total[5m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          component: userop
+        annotations:
+          summary: "High UserOperation failure rate"
+          description: "{{ $value | humanizePercentage }} of UserOperations are failing validation"
+
+      - alert: UserOperationStuck
+        expr: userop_pending_time_seconds > 300
+        for: 5m
+        labels:
+          severity: warning
+          component: userop
+        annotations:
+          summary: "UserOperations stuck in mempool"
+          description: "UserOperations pending for over {{ $value }}s"
+
+      # Smart wallet alerts
+      - alert: SmartWalletCreationFailures
+        expr: rate(wallet_creation_failed[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: wallet
+        annotations:
+          summary: "Smart wallet creation failures"
+          description: "{{ $value }} wallet creation failures per second"
+
+      - alert: SmartWalletHighGasUsage
+        expr: histogram_quantile(0.95, wallet_operation_gas_used) > 500000
+        for: 10m
+        labels:
+          severity: info
+          component: wallet
+        annotations:
+          summary: "High smart wallet gas usage"
+          description: "95th percentile gas usage is {{ $value }}"

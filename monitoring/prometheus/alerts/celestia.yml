@@ -1,0 +1,96 @@
+groups:
+  - name: celestia
+    interval: 30s
+    rules:
+      # Celestia connectivity alerts
+      - alert: CelestiaNodeOffline
+        expr: up{job="celestia"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: celestia
+        annotations:
+          summary: "Celestia node is offline"
+          description: "Celestia {{ $labels.service }} is down"
+
+      - alert: CelestiaSubmissionFailure
+        expr: rate(celestia_submission_failures[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: celestia
+        annotations:
+          summary: "Celestia data submission failures"
+          description: "Failed to submit data to Celestia at {{ $value }} failures/sec"
+
+      - alert: CelestiaHighLatency
+        expr: celestia_submission_latency_seconds > 30
+        for: 5m
+        labels:
+          severity: warning
+          component: celestia
+        annotations:
+          summary: "High Celestia submission latency"
+          description: "Celestia submission latency is {{ $value }}s"
+
+      - alert: CelestiaBridgeQueueBacklog
+        expr: celestia_bridge_queue_size > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: celestia
+        annotations:
+          summary: "Celestia bridge queue backlog"
+          description: "{{ $value }} items in bridge queue"
+
+      - alert: CelestiaLightNodeSyncLag
+        expr: celestia_light_node_height < celestia_network_height - 100
+        for: 10m
+        labels:
+          severity: warning
+          component: celestia
+        annotations:
+          summary: "Celestia light node lagging"
+          description: "Light node is {{ $value }} blocks behind network"
+
+      # Data availability alerts
+      - alert: DataAvailabilityCheckFailure
+        expr: rate(da_verification_failures[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: da
+        annotations:
+          summary: "Data availability verification failures"
+          description: "DA verification failing at {{ $value }} failures/sec"
+
+      - alert: DataAvailabilityHighCost
+        expr: da_submission_cost_usd > 10
+        for: 30m
+        labels:
+          severity: info
+          component: da
+        annotations:
+          summary: "High DA submission costs"
+          description: "DA submission cost is ${{ $value }} per batch"
+
+      # Blob storage alerts
+      - alert: BlobStorageNearCapacity
+        expr: celestia_blob_storage_used_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "Blob storage near capacity"
+          description: "Blob storage is {{ $value }}% full"
+
+      - alert: BlobRetrievalFailure
+        expr: rate(celestia_blob_retrieval_failures[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: storage
+        annotations:
+          summary: "Blob retrieval failures"
+          description: "Failed to retrieve blobs at {{ $value }} failures/sec"

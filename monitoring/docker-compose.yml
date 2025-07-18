@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: zkfair-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alerts:/etc/prometheus/alerts
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: zkfair-alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: zkfair-grafana
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_DATABASE_PASSWORD=${GRAFANA_DB_PASSWORD}
+      - GF_SECURITY_SECRET_KEY=${GRAFANA_SECRET_KEY}
+    ports:
+      - "3000:3000"
+    networks:
+      - zkfair-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: zkfair-node-exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
+    ports:
+      - "9100:9100"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: zkfair-postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://monitoring:${POSTGRES_MONITORING_PASSWORD}@postgres:5432/zkfair?sslmode=disable
+    ports:
+      - "9187:9187"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: zkfair-redis-exporter
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "9121:9121"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: zkfair-blackbox-exporter
+    command:
+      - '--config.file=/config/blackbox.yml'
+    volumes:
+      - ./blackbox/blackbox.yml:/config/blackbox.yml
+    ports:
+      - "9115:9115"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+  json-rpc-exporter:
+    image: ethpandaops/ethereum-json-rpc-exporter:latest
+    container_name: zkfair-json-rpc-exporter
+    environment:
+      - ETHEREUM_RPC_URL=http://polygon-cdk-rpc:8545
+    ports:
+      - "9116:9116"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+  contract-exporter:
+    build: ./exporters/contract-exporter
+    container_name: zkfair-contract-exporter
+    environment:
+      - RPC_URL=http://polygon-cdk-rpc:8545
+      - ENTRY_POINT=${ENTRY_POINT_ADDRESS}
+      - PAYMASTER=${PAYMASTER_ADDRESS}
+      - FACTORY=${FACTORY_ADDRESS}
+    ports:
+      - "9200:9200"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+  # Notification webhook handler
+  webhook-handler:
+    build: ./webhook-handler
+    container_name: zkfair-webhook-handler
+    environment:
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    ports:
+      - "8080:8080"
+    networks:
+      - zkfair-network
+    restart: unless-stopped
+
+networks:
+  zkfair-network:
+    external: true
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:

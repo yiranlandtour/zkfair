@@ -1,0 +1,377 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "blockchain-overview",
+    "title": "ZKFair L2 - Blockchain Overview",
+    "tags": ["blockchain", "zkfair"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "calcs": ["lastNotNull"],
+            "displayMode": "table",
+            "placement": "bottom"
+          }
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "chain_head_block",
+            "legendFormat": "Block Height",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(chain_head_block[5m]) * 60",
+            "legendFormat": "Blocks/min",
+            "refId": "B"
+          }
+        ],
+        "title": "Block Production",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 1000
+                },
+                {
+                  "color": "red",
+                  "value": 5000
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
+        "id": 2,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "txpool_pending_transactions",
+            "refId": "A"
+          }
+        ],
+        "title": "Pending Transactions",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 5
+                },
+                {
+                  "color": "green",
+                  "value": 10
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
+        "id": 3,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "p2p_connected_peers",
+            "refId": "A"
+          }
+        ],
+        "title": "Connected Peers",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "TPS",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 20,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "id": 4,
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "calcs": ["mean", "max"],
+            "displayMode": "table",
+            "placement": "bottom"
+          }
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "rate(chain_transactions_total[1m])",
+            "legendFormat": "TPS",
+            "refId": "A"
+          }
+        ],
+        "title": "Transactions Per Second",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Gas Price (Gwei)",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "gwei"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "id": 5,
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "calcs": ["lastNotNull"],
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "chain_gas_price / 1000000000",
+            "legendFormat": "Gas Price",
+            "refId": "A"
+          }
+        ],
+        "title": "Gas Price",
+        "type": "timeseries"
+      }
+    ]
+  }
+}

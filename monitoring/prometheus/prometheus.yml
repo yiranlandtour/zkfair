@@ -1,0 +1,128 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    chain: 'zkfair-l2'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter - System metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: 
+          - 'node-exporter:9100'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+).*'
+        replacement: '${1}'
+
+  # Polygon CDK Node metrics
+  - job_name: 'polygon-cdk'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - 'polygon-cdk-rpc:8123'
+          - 'polygon-cdk-sync:8124'
+          - 'polygon-cdk-aggregator:8125'
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^:]+):.*'
+        target_label: service
+        replacement: '${1}'
+
+  # Celestia DA metrics
+  - job_name: 'celestia'
+    static_configs:
+      - targets:
+          - 'celestia-bridge:26660'
+          - 'celestia-light:26659'
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^:]+):.*'
+        target_label: service
+        replacement: '${1}'
+
+  # ERC-4337 Bundler metrics
+  - job_name: 'bundler'
+    static_configs:
+      - targets:
+          - 'bundler:4337'
+    metrics_path: '/metrics'
+
+  # Backend API metrics
+  - job_name: 'backend-api'
+    static_configs:
+      - targets:
+          - 'backend:3001'
+    metrics_path: '/metrics'
+
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets:
+          - 'postgres-exporter:9187'
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets:
+          - 'redis-exporter:9121'
+
+  # Ethereum JSON-RPC metrics
+  - job_name: 'json-rpc'
+    metrics_path: '/probe'
+    params:
+      module: [json_rpc]
+    static_configs:
+      - targets:
+          - 'http://polygon-cdk-rpc:8545'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: json-rpc-exporter:9116
+
+  # Blackbox exporter for endpoint monitoring
+  - job_name: 'blackbox'
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - 'https://app.zkfair.io'
+          - 'https://api.zkfair.io/health'
+          - 'https://rpc.zkfair.io'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Smart contract metrics (custom exporter)
+  - job_name: 'contracts'
+    static_configs:
+      - targets:
+          - 'contract-exporter:9200'
+    metrics_path: '/metrics'

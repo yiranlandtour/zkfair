@@ -1,0 +1,24 @@
+# ZKFair L2 Automated Tasks
+# This file should be placed in /etc/cron.d/zkfair
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+ZKFAIR_HOME=/opt/zkfair
+
+# Health checks every 5 minutes
+*/5 * * * * zkfair ${ZKFAIR_HOME}/monitoring/scripts/health-check.sh >> /var/log/zkfair/health-check.log 2>&1
+
+# Paymaster balance check every 30 minutes
+*/30 * * * * zkfair ${ZKFAIR_HOME}/monitoring/scripts/paymaster-topup.sh >> /var/log/zkfair/paymaster-topup.log 2>&1
+
+# Daily backup at 2 AM
+0 2 * * * zkfair ${ZKFAIR_HOME}/monitoring/scripts/backup.sh >> /var/log/zkfair/backup.log 2>&1
+
+# Log collection on errors (triggered by monitoring alerts)
+# This would typically be called by alertmanager webhook
+
+# Weekly log cleanup
+0 3 * * 0 zkfair find /var/log/zkfair -name "*.log" -mtime +30 -delete
+
+# Monthly metrics cleanup (Prometheus retention is handled separately)
+0 4 1 * * zkfair docker exec prometheus prometheus-tool tsdb clean /prometheus >> /var/log/zkfair/prometheus-cleanup.log 2>&1

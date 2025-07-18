@@ -1,0 +1,98 @@
+groups:
+  - name: blockchain
+    interval: 30s
+    rules:
+      # Block production alerts
+      - alert: BlockProductionStopped
+        expr: increase(chain_head_block[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: blockchain
+        annotations:
+          summary: "Block production has stopped"
+          description: "No new blocks have been produced in the last 5 minutes"
+
+      - alert: BlockProductionSlow
+        expr: rate(chain_head_block[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: blockchain
+        annotations:
+          summary: "Block production is slow"
+          description: "Block production rate is below 0.1 blocks per second"
+
+      # Chain sync alerts
+      - alert: ChainSyncLagging
+        expr: chain_sync_lag_blocks > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: sync
+        annotations:
+          summary: "Chain sync is lagging"
+          description: "Chain is {{ $value }} blocks behind"
+
+      - alert: ChainSyncStalled
+        expr: rate(chain_sync_processed_blocks[5m]) == 0 and chain_sync_lag_blocks > 0
+        for: 10m
+        labels:
+          severity: critical
+          component: sync
+        annotations:
+          summary: "Chain sync has stalled"
+          description: "No blocks have been synced in the last 10 minutes"
+
+      # Transaction pool alerts
+      - alert: TransactionPoolFull
+        expr: txpool_pending_transactions > 10000
+        for: 5m
+        labels:
+          severity: warning
+          component: txpool
+        annotations:
+          summary: "Transaction pool is full"
+          description: "Transaction pool has {{ $value }} pending transactions"
+
+      - alert: TransactionPoolStuck
+        expr: rate(txpool_processed_transactions[5m]) == 0 and txpool_pending_transactions > 100
+        for: 10m
+        labels:
+          severity: critical
+          component: txpool
+        annotations:
+          summary: "Transaction pool is stuck"
+          description: "No transactions processed despite {{ $value }} pending"
+
+      # Gas price alerts
+      - alert: GasPriceHigh
+        expr: chain_gas_price > 1000000000000
+        for: 10m
+        labels:
+          severity: warning
+          component: gas
+        annotations:
+          summary: "Gas price is high"
+          description: "Gas price is {{ $value }} wei"
+
+      # Peer connectivity alerts
+      - alert: LowPeerCount
+        expr: p2p_connected_peers < 3
+        for: 5m
+        labels:
+          severity: warning
+          component: p2p
+        annotations:
+          summary: "Low peer count"
+          description: "Only {{ $value }} peers connected"
+
+      - alert: NoPeers
+        expr: p2p_connected_peers == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: p2p
+        annotations:
+          summary: "No peers connected"
+          description: "Node has no peers connected"

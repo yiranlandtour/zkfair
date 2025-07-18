@@ -1,0 +1,87 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: []  # Defaults to 2xx
+      method: GET
+      no_follow_redirects: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: false
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      method: POST
+      headers:
+        Content-Type: application/json
+      body: '{}'
+      valid_status_codes: []  # Defaults to 2xx
+
+  http_api_health:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200]
+      method: GET
+      no_follow_redirects: true
+      fail_if_body_not_matches_regexp:
+        - "ok|healthy|success"
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+
+  json_rpc:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      method: POST
+      headers:
+        Content-Type: application/json
+      body: |
+        {
+          "jsonrpc": "2.0",
+          "method": "eth_blockNumber",
+          "params": [],
+          "id": 1
+        }
+      valid_status_codes: [200]
+      fail_if_body_not_matches_regexp:
+        - "jsonrpc"
+        - "result"
+
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+
+  dns_lookup:
+    prober: dns
+    timeout: 5s
+    dns:
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+      query_name: "example.com"
+      query_type: "A"
+
+  grpc:
+    prober: grpc
+    timeout: 5s
+    grpc:
+      tls: true
+      tls_config:
+        insecure_skip_verify: false
+
+  grpc_plain:
+    prober: grpc
+    timeout: 5s
+    grpc:
+      tls: false
+      service: ""

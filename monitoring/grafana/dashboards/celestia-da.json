@@ -1,0 +1,554 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "celestia-da",
+    "title": "ZKFair L2 - Celestia Data Availability",
+    "tags": ["celestia", "data-availability", "zkfair"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Submissions/min",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 20,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Failed"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "red",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "calcs": ["lastNotNull", "mean"],
+            "displayMode": "table",
+            "placement": "bottom"
+          }
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "rate(celestia_submissions_total{status=\"success\"}[5m]) * 60",
+            "legendFormat": "Successful",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(celestia_submissions_total{status=\"failed\"}[5m]) * 60",
+            "legendFormat": "Failed",
+            "refId": "B"
+          }
+        ],
+        "title": "Data Submissions to Celestia",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 20
+                },
+                {
+                  "color": "red",
+                  "value": 30
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
+        "id": 2,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "celestia_submission_latency_seconds",
+            "refId": "A"
+          }
+        ],
+        "title": "Submission Latency",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 500
+                },
+                {
+                  "color": "red",
+                  "value": 1000
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
+        "id": 3,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "celestia_bridge_queue_size",
+            "refId": "A"
+          }
+        ],
+        "title": "Bridge Queue Size",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Bytes",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 20,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "decbytes"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "id": 4,
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "calcs": ["mean", "max"],
+            "displayMode": "table",
+            "placement": "bottom"
+          }
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "celestia_blob_size_bytes",
+            "legendFormat": "Blob Size",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(celestia_blob_size_histogram_bucket[5m]))",
+            "legendFormat": "p95 Size",
+            "refId": "B"
+          }
+        ],
+        "title": "Blob Sizes",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "USD",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "bars",
+              "fillOpacity": 100,
+              "gradientMode": "none",
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "currencyUSD"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "id": 5,
+        "options": {
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          },
+          "legend": {
+            "calcs": ["sum"],
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "increase(da_submission_cost_usd[1h])",
+            "legendFormat": "DA Cost",
+            "refId": "A"
+          }
+        ],
+        "title": "Hourly Data Availability Cost",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Blocks",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 100
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "id": 6,
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "calcs": ["lastNotNull"],
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "celestia_light_node_height",
+            "legendFormat": "Light Node",
+            "refId": "A"
+          },
+          {
+            "expr": "celestia_network_height",
+            "legendFormat": "Network",
+            "refId": "B"
+          },
+          {
+            "expr": "celestia_network_height - celestia_light_node_height",
+            "legendFormat": "Sync Lag",
+            "refId": "C"
+          }
+        ],
+        "title": "Celestia Network Sync Status",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 60
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "id": 7,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "pluginVersion": "8.5.0",
+        "targets": [
+          {
+            "expr": "celestia_blob_storage_used_percent",
+            "refId": "A"
+          }
+        ],
+        "title": "Blob Storage Usage",
+        "type": "gauge"
+      }
+    ]
+  }
+}
