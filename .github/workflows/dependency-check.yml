@@ -1,0 +1,79 @@
+name: Dependency Security Check
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight
+  pull_request:
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '**/yarn.lock'
+      - 'contracts/foundry.toml'
+
+jobs:
+  check-npm:
+    name: Check NPM Dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        directory: [backend, frontend, sdk, bundler]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd ${{ matrix.directory }}
+          npm ci
+
+      - name: Run audit
+        run: |
+          cd ${{ matrix.directory }}
+          npm audit --production
+
+      - name: Check for outdated packages
+        run: |
+          cd ${{ matrix.directory }}
+          npm outdated || true
+
+      - name: License check
+        run: |
+          cd ${{ matrix.directory }}
+          npx license-checker --production --summary
+
+  check-contracts:
+    name: Check Smart Contract Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Check dependencies
+        run: |
+          cd contracts
+          forge update
+          forge tree
+
+  snyk-scan:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=high
