@@ -1,10 +1,12 @@
 import { ethers } from 'ethers';
 import { PrismaClient } from '@prisma/client';
 import { EntryPoint__factory } from '@account-abstraction/contracts';
+import { WebSocketServer } from '../websocket/WebSocketServer';
 
 export class EventListener {
   private entryPoint: ethers.Contract;
   private lastProcessedBlock: number = 0;
+  private wsServer?: WebSocketServer;
   
   constructor(
     private provider: ethers.Provider,
@@ -12,6 +14,10 @@ export class EventListener {
   ) {
     const entryPointAddress = process.env.ENTRY_POINT_ADDRESS!;
     this.entryPoint = EntryPoint__factory.connect(entryPointAddress, provider);
+  }
+  
+  setWebSocketServer(wsServer: WebSocketServer) {
+    this.wsServer = wsServer;
   }
 
   async start() {
@@ -47,6 +53,7 @@ export class EventListener {
 
   private async handleUserOperationEvent(data: any) {
     try {
+      // Save to database
       await this.prisma.userOperation.create({
         data: {
           userOpHash: data.userOpHash,
@@ -61,6 +68,37 @@ export class EventListener {
           timestamp: new Date(data.timestamp * 1000)
         }
       });
+      
+      // Find associated transaction
+      const transaction = await this.prisma.transaction.findUnique({
+        where: { userOpHash: data.userOpHash },
+        include: { smartWallet: true }
+      });
+      
+      if (transaction) {
+        // Update transaction status
+        await this.prisma.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: data.success ? 'SUCCESS' : 'FAILED',
+            transactionHash: data.transactionHash,
+            blockNumber: data.blockNumber,
+            actualGasCost: data.actualGasCost.toString()
+          }
+        });
+        
+        // Broadcast update via WebSocket
+        if (this.wsServer) {
+          this.wsServer.broadcastUserOperationUpdate({
+            userOpHash: data.userOpHash,
+            status: data.success ? 'included' : 'failed',
+            transactionHash: data.transactionHash,
+            blockNumber: data.blockNumber,
+            actualGasCost: data.actualGasCost.toString(),
+            reason: data.success ? undefined : 'Transaction failed'
+          });
+        }
+      }
       
       console.log(`Processed UserOperation: ${data.userOpHash}`);
     } catch (error) {

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
 import { ethers } from 'ethers';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
@@ -10,6 +11,7 @@ import { transactionRouter } from './routes/transactions';
 import { statsRouter } from './routes/stats';
 import { healthRouter } from './routes/health';
 import { EventListener } from './services/eventListener';
+import { WebSocketServer } from './websocket/WebSocketServer';
 import { authenticate, authenticateApiKey } from './middleware/auth';
 import { 
   sanitizeInput, 
@@ -32,6 +34,7 @@ dotenv.config();
 handleUncaughtExceptions();
 
 const app = express();
+const httpServer = createServer(app);
 const prisma = new PrismaClient();
 const port = process.env.PORT || 4000;
 
@@ -89,7 +92,8 @@ app.get('/', (req, res) => {
         '/api/auth/api-key',
         '/api/transactions',
         '/api/stats'
-      ]
+      ],
+      websocket: process.env.WEBSOCKET_URL || `ws://localhost:${port}`
     }
   });
 });
@@ -103,12 +107,20 @@ async function startServer() {
   console.log('Connected to database');
   
   const provider = new ethers.JsonRpcProvider(process.env.L2_RPC_URL);
+  
+  // Start WebSocket server
+  const wsServer = new WebSocketServer(httpServer, provider);
+  console.log('WebSocket server initialized');
+  
+  // Start event listener with WebSocket integration
   const eventListener = new EventListener(provider, prisma);
+  eventListener.setWebSocketServer(wsServer);
   await eventListener.start();
   console.log('Event listener started');
   
-  app.listen(port, () => {
+  httpServer.listen(port, () => {
     console.log(`API server listening on port ${port}`);
+    console.log(`WebSocket server listening on ws://localhost:${port}`);
   });
 }
 

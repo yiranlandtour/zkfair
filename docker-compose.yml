@@ -79,12 +79,16 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - postgres
+      - redis
       - cdk-node
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://zkfair:zkfair123@postgres:5432/zkfair_api
+      - REDIS_URL=redis://:zkfair123@redis:6379
       - L2_RPC_URL=http://cdk-node:8545
       - ENTRY_POINT_ADDRESS=${ENTRY_POINT_ADDRESS}
+      - JWT_SECRET=${JWT_SECRET}
+      - WEBSOCKET_URL=ws://localhost:4000
     ports:
       - "4000:4000"
     networks:
@@ -98,10 +102,12 @@ services:
         - REACT_APP_L2_RPC_URL=http://localhost:8545
         - REACT_APP_BUNDLER_URL=http://localhost:3000
         - REACT_APP_API_URL=http://localhost:3001/api
+        - REACT_APP_WEBSOCKET_URL=ws://localhost:4000
         - REACT_APP_ENTRY_POINT_ADDRESS=${ENTRY_POINT_ADDRESS}
         - REACT_APP_PAYMASTER_ADDRESS=${PAYMASTER_ADDRESS}
         - REACT_APP_FACTORY_ADDRESS=${FACTORY_ADDRESS}
         - REACT_APP_USDC_ADDRESS=${USDC_ADDRESS}
+        - REACT_APP_EXPLORER_URL=http://localhost:4001
     networks:
       - zkfair-network
 

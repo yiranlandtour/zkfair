@@ -1,4 +1,4 @@
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { verify } from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
