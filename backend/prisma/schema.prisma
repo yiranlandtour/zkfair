@@ -111,6 +111,9 @@ model User {
   transactions Transaction[]
   refreshTokens RefreshToken[]
   apiKeys      ApiKey[]
+  notificationPreferences    UserNotificationPreference?
+  notifications              Notification[]
+  notificationLogs           NotificationLog[]
 
   @@index([address])
 }
@@ -156,4 +159,74 @@ model ApiKey {
   @@index([userId])
   @@index([key])
   @@index([isActive])
+}
+
+model UserNotificationPreference {
+  userId       String   @id
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channels     Json     // Channel preferences (email, sms, push, etc.)
+  categories   Json     // Category preferences (transactions, security, etc.)
+  quietHours   Json?    // Quiet hours settings
+  language     String   @default("en")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Notification {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String
+  title        String
+  body         String
+  data         Json?
+  read         Boolean   @default(false)
+  readAt       DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model NotificationLog {
+  id           String    @id @default(cuid())
+  eventId      String
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type         String
+  channel      String
+  status       String    // queued, sent, delivered, failed, bounced
+  messageId    String?
+  content      Json?
+  metadata     Json?
+  deliveredAt  DateTime?
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  error        String?
+  createdAt    DateTime  @default(now())
+  
+  @@index([eventId])
+  @@index([userId])
+  @@index([type])
+  @@index([channel])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model NotificationTemplate {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  type         String
+  channel      String
+  subject      Json?     // Localized subjects
+  body         Json      // Localized body templates
+  metadata     Json?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  @@unique([type, channel])
+  @@index([type])
+  @@index([channel])
 }

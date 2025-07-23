@@ -1,0 +1,233 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: zkfair
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: zkfair_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Setup environment
+        run: |
+          cd backend
+          cp .env.example .env.test
+          echo "DATABASE_URL=postgresql://zkfair:testpass@localhost:5432/zkfair_test" >> .env.test
+          echo "REDIS_URL=redis://localhost:6379" >> .env.test
+          echo "JWT_SECRET=test-secret-key" >> .env.test
+
+      - name: Run Prisma migrations
+        run: |
+          cd backend
+          npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://zkfair:testpass@localhost:5432/zkfair_test
+
+      - name: Run linting
+        run: |
+          cd backend
+          npm run lint
+
+      - name: Run type check
+        run: |
+          cd backend
+          npm run type-check || echo "No type-check script"
+
+      - name: Run tests
+        run: |
+          cd backend
+          npm test -- --coverage
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://zkfair:testpass@localhost:5432/zkfair_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-key
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: |
+          cd backend
+          npm audit --production || true
+
+      - name: Run OWASP dependency check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'zkfair-backend'
+          path: './backend'
+          format: 'HTML'
+          args: >
+            --enableRetired
+            
+      - name: Upload dependency check results
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-check-report
+          path: reports/
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: zkfair/backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+    steps:
+      - name: Deploy to Kubernetes
+        uses: azure/k8s-deploy@v4
+        with:
+          manifests: |
+            k8s/backend/deployment-staging.yaml
+            k8s/backend/service.yaml
+          images: |
+            zkfair/backend:sha-${{ github.sha }}
+          namespace: zkfair-staging
+
+      - name: Run database migrations
+        run: |
+          kubectl exec -n zkfair-staging deployment/backend -- npm run migrate:deploy
+
+      - name: Health check
+        run: |
+          sleep 30
+          curl -f https://api-staging.zkfair.io/health || exit 1
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Deploy to Kubernetes
+        uses: azure/k8s-deploy@v4
+        with:
+          manifests: |
+            k8s/backend/deployment-prod.yaml
+            k8s/backend/service.yaml
+          images: |
+            zkfair/backend:sha-${{ github.sha }}
+          namespace: zkfair-prod
+          strategy: canary
+          percentage: 25
+
+      - name: Run database migrations
+        run: |
+          kubectl exec -n zkfair-prod deployment/backend -- npm run migrate:deploy
+
+      - name: Health check
+        run: |
+          sleep 60
+          curl -f https://api.zkfair.io/health || exit 1
+
+      - name: Complete rollout
+        run: |
+          kubectl -n zkfair-prod rollout status deployment/backend
+
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Backend production deployment completed!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()

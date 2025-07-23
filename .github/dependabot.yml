@@ -1,0 +1,139 @@
+version: 2
+updates:
+  # Root package.json
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "zkfair/security-team"
+    labels:
+      - "dependencies"
+      - "javascript"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # Backend dependencies
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "zkfair/backend-team"
+    labels:
+      - "dependencies"
+      - "backend"
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+      development-dependencies:
+        dependency-type: "development"
+
+  # Frontend dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "zkfair/frontend-team"
+    labels:
+      - "dependencies"
+      - "frontend"
+    groups:
+      react-dependencies:
+        patterns:
+          - "react*"
+          - "@types/react*"
+      vite-dependencies:
+        patterns:
+          - "vite*"
+          - "@vitejs/*"
+
+  # Bundler dependencies
+  - package-ecosystem: "npm"
+    directory: "/bundler"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "zkfair/backend-team"
+    labels:
+      - "dependencies"
+      - "bundler"
+
+  # SDK dependencies
+  - package-ecosystem: "npm"
+    directory: "/sdk"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "zkfair/sdk-team"
+    labels:
+      - "dependencies"
+      - "sdk"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "zkfair/devops-team"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    reviewers:
+      - "zkfair/devops-team"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    reviewers:
+      - "zkfair/devops-team"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/bundler"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    reviewers:
+      - "zkfair/devops-team"
+    labels:
+      - "dependencies"
+      - "docker"

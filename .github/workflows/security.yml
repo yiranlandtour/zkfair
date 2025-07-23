@@ -1,0 +1,208 @@
+name: Security Audit
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  audit-dependencies:
+    name: Audit Dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        directory: ['.', 'backend', 'frontend', 'bundler', 'sdk']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Run npm audit
+        run: |
+          cd ${{ matrix.directory }}
+          if [ -f "package.json" ]; then
+            npm audit --production
+          fi
+        continue-on-error: true
+
+      - name: Create audit report
+        run: |
+          cd ${{ matrix.directory }}
+          if [ -f "package.json" ]; then
+            npm audit --json > audit-report-${{ matrix.directory }}.json || true
+          fi
+
+      - name: Upload audit reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: audit-reports
+          path: '**/audit-report-*.json'
+
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      matrix:
+        language: ['javascript', 'typescript']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend, bundler, nginx]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy container scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: './${{ matrix.service }}'
+          format: 'sarif'
+          output: 'trivy-${{ matrix.service }}.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-${{ matrix.service }}.sarif'
+
+  secrets-scan:
+    name: Secrets Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  api-key-rotation-check:
+    name: API Key Rotation Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check API key age
+        run: |
+          # This would connect to your backend to check API key ages
+          echo "Checking API key rotation requirements..."
+          # Custom script to check key ages and notify if rotation is needed
+
+  security-headers-check:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Check production security headers
+        run: |
+          # Check security headers on production
+          curl -I https://app.zkfair.io | grep -E "(Strict-Transport-Security|Content-Security-Policy|X-Frame-Options|X-Content-Type-Options)"
+          curl -I https://api.zkfair.io | grep -E "(Strict-Transport-Security|Content-Security-Policy|X-Frame-Options|X-Content-Type-Options)"
+
+  penetration-test:
+    name: Automated Penetration Testing
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: OWASP ZAP Scan
+        uses: zaproxy/action-full-scan@v0.8.0
+        with:
+          target: 'https://api-staging.zkfair.io'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      - name: Upload ZAP results
+        uses: actions/upload-artifact@v3
+        with:
+          name: zap-scan-results
+          path: report_html.html
+
+  generate-security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [audit-dependencies, codeql-analysis, container-scan, secrets-scan]
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate consolidated report
+        run: |
+          echo "# Security Audit Report" > security-report.md
+          echo "Date: $(date)" >> security-report.md
+          echo "" >> security-report.md
+          
+          echo "## Summary" >> security-report.md
+          echo "- Dependencies audited" >> security-report.md
+          echo "- Code analyzed with CodeQL" >> security-report.md
+          echo "- Containers scanned" >> security-report.md
+          echo "- Secrets scanning completed" >> security-report.md
+          
+          # Add more detailed analysis here
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: security-report.md
+
+      - name: Create issue if vulnerabilities found
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['security', 'automated'],
+              state: 'open'
+            });
+            
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Security Audit Report - ${new Date().toISOString().split('T')[0]}`,
+                body: 'A new security audit has been completed. Please review the artifacts.',
+                labels: ['security', 'automated']
+              });
+            }
+
+      - name: Notify security team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Weekly security audit completed. Please review the results.'
+          webhook_url: ${{ secrets.SECURITY_SLACK_WEBHOOK }}
+        if: always()

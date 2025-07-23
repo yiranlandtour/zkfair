@@ -1,0 +1,57 @@
+# Code Owners for ZKFair L2
+
+# Default owners for everything
+* @zkfair/core-team
+
+# Smart Contracts
+/contracts/ @zkfair/blockchain-team @zkfair/security-team
+/contracts/src/governance/ @zkfair/governance-team
+/contracts/test/ @zkfair/blockchain-team
+
+# Backend Services
+/backend/ @zkfair/backend-team
+/backend/src/middleware/auth*.ts @zkfair/security-team
+/backend/src/middleware/security*.ts @zkfair/security-team
+/backend/src/middleware/signature.ts @zkfair/security-team
+/backend/src/middleware/sqlInjection.ts @zkfair/security-team
+/backend/src/websocket/ @zkfair/backend-team @zkfair/realtime-team
+
+# Frontend Application
+/frontend/ @zkfair/frontend-team
+/frontend/src/pages/Admin/ @zkfair/admin-team
+/frontend/src/contexts/ @zkfair/frontend-team @zkfair/architecture-team
+
+# Bundler Service
+/bundler/ @zkfair/backend-team @zkfair/blockchain-team
+
+# SDK
+/sdk/ @zkfair/sdk-team
+
+# Infrastructure and DevOps
+/docker/ @zkfair/devops-team
+/k8s/ @zkfair/devops-team
+/.github/ @zkfair/devops-team
+/nginx/ @zkfair/devops-team
+/monitoring/ @zkfair/devops-team @zkfair/sre-team
+
+# Documentation
+/docs/ @zkfair/docs-team
+*.md @zkfair/docs-team
+
+# Security-sensitive files
+.env* @zkfair/security-team @zkfair/devops-team
+**/secrets* @zkfair/security-team
+**/credentials* @zkfair/security-team
+
+# CI/CD
+/.github/workflows/ @zkfair/devops-team @zkfair/security-team
+
+# Dependencies
+package.json @zkfair/architecture-team
+package-lock.json @zkfair/architecture-team
+**/package.json @zkfair/architecture-team
+**/package-lock.json @zkfair/architecture-team
+
+# Database
+/backend/prisma/ @zkfair/database-team @zkfair/backend-team
+**/migrations/ @zkfair/database-team

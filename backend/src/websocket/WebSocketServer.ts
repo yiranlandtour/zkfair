@@ -5,6 +5,8 @@ import { PrismaClient } from '@prisma/client';
 import { ethers } from 'ethers';
 import { logger } from '../utils/logger';
 import { redis } from '../utils/redis';
+import { WebSocketEnhancements } from './WebSocketEnhancements';
+import websocketConfig from '../config/websocket';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -32,6 +34,7 @@ export class WebSocketServer {
   private prisma: PrismaClient;
   private provider: ethers.Provider;
   private subscriptions: Map<string, Set<string>> = new Map();
+  private enhancements: WebSocketEnhancements;
 
   constructor(httpServer: HTTPServer, provider: ethers.Provider) {
     this.prisma = new PrismaClient();
@@ -45,10 +48,15 @@ export class WebSocketServer {
       transports: ['websocket', 'polling'],
     });
 
+    this.enhancements = new WebSocketEnhancements(this.io, this.provider);
+    
     this.setupMiddleware();
     this.setupEventHandlers();
     this.startBlockListener();
     this.startUserOperationListener();
+    
+    // Start enhanced features
+    this.enhancements.startGasPriceMonitoring();
   }
 
   private setupMiddleware() {
@@ -95,6 +103,15 @@ export class WebSocketServer {
         socket.join(`wallet:${socket.smartWalletAddress}`);
       }
 
+      // Rate limiting middleware for socket events
+      socket.use((packet, next) => {
+        if (this.enhancements.checkRateLimit(socket.id)) {
+          next();
+        } else {
+          next(new Error('RATE_LIMIT'));
+        }
+      });
+
       // Handle subscription to specific events
       socket.on('subscribe', async (data: { event: string; params?: any }) => {
         await this.handleSubscribe(socket, data.event, data.params);
@@ -120,6 +137,45 @@ export class WebSocketServer {
         await this.handleTransactionSimulation(socket, data);
       });
 
+      // Handle gas price subscription
+      socket.on('subscribeGasPrices', () => {
+        socket.join('gas-prices');
+        socket.emit('subscribed', { event: 'gas-prices', status: 'success' });
+        logger.info('Client subscribed to gas prices', { socketId: socket.id });
+      });
+
+      // Handle gas price unsubscription
+      socket.on('unsubscribeGasPrices', () => {
+        socket.leave('gas-prices');
+        socket.emit('unsubscribed', { event: 'gas-prices', status: 'success' });
+      });
+
+      // Handle transaction monitoring request
+      socket.on('monitorTransaction', async (data: { transactionHash: string }) => {
+        if (socket.smartWalletAddress) {
+          await this.enhancements.monitorPendingTransaction(
+            data.transactionHash,
+            socket.smartWalletAddress,
+            socket.userId
+          );
+          socket.emit('monitoringStarted', { 
+            transactionHash: data.transactionHash,
+            status: 'success' 
+          });
+        }
+      });
+
+      // Handle metrics request
+      socket.on('getMetrics', () => {
+        const metrics = this.enhancements.getMetrics();
+        socket.emit('metrics', metrics);
+      });
+
+      // Error handling
+      socket.on('error', (error) => {
+        this.enhancements.handleError(socket, error, 'socket-error');
+      });
+
       // Handle disconnection
       socket.on('disconnect', () => {
         logger.info('WebSocket client disconnected', {
@@ -127,6 +183,11 @@ export class WebSocketServer {
           userId: socket.userId,
         });
         this.cleanupSubscriptions(socket.id);
+      });
+
+      // Handle reconnection
+      socket.on('reconnect_attempt', () => {
+        this.enhancements.handleConnectionRecovery(socket);
       });
     });
   }
@@ -395,11 +456,32 @@ export class WebSocketServer {
     this.io.to(`user:${userId}`).emit(event, data);
   }
 
+  public broadcastSystemNotification(type: 'info' | 'warning' | 'error', title: string, message: string) {
+    this.enhancements.broadcastSystemNotification({
+      type,
+      title,
+      message,
+      timestamp: Date.now(),
+    });
+  }
+
+  public async monitorTransaction(transactionHash: string, walletAddress: string, userId?: string) {
+    await this.enhancements.monitorPendingTransaction(transactionHash, walletAddress, userId);
+  }
+
   public getConnectedClients(): number {
     return this.io.sockets.sockets.size;
   }
 
+  public getMetrics() {
+    return {
+      ...this.enhancements.getMetrics(),
+      subscriptions: this.subscriptions.size,
+    };
+  }
+
   public async close() {
+    this.enhancements.cleanup();
     await this.prisma.$disconnect();
     this.io.close();
   }
