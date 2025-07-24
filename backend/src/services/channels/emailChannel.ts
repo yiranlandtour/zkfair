@@ -139,15 +139,104 @@ export class EmailChannel implements NotificationChannel {
   }
 
   private async sendViaSES(message: NotificationMessage): Promise<DeliveryResult> {
-    // AWS SES implementation
-    // This would use AWS SDK to send emails via SES
-    throw new Error('SES provider not implemented yet');
+    const AWS = await import('aws-sdk');
+    const ses = new AWS.SES({ region: process.env.AWS_REGION || 'us-east-1' });
+    
+    const to = message.data?.email || message.data?.to;
+    if (!to) {
+      throw new Error('Email recipient not specified');
+    }
+    
+    const params = {
+      Destination: {
+        ToAddresses: [to],
+      },
+      Message: {
+        Body: {
+          Html: {
+            Charset: 'UTF-8',
+            Data: message.html || message.body,
+          },
+          Text: {
+            Charset: 'UTF-8',
+            Data: message.body,
+          },
+        },
+        Subject: {
+          Charset: 'UTF-8',
+          Data: message.subject || 'Notification from ZKFair',
+        },
+      },
+      Source: `${this.config.from.name} <${this.config.from.email}>`,
+      ReplyToAddresses: this.config.replyTo ? [this.config.replyTo] : undefined,
+      Tags: [
+        { Name: 'eventId', Value: message.eventId },
+        { Name: 'userId', Value: message.userId || 'system' },
+      ],
+    };
+    
+    const result = await ses.sendEmail(params).promise();
+    
+    return {
+      success: true,
+      messageId: result.MessageId,
+      timestamp: Date.now(),
+      details: {
+        provider: 'ses',
+        region: process.env.AWS_REGION || 'us-east-1',
+      }
+    };
   }
 
   private async sendViaSMTP(message: NotificationMessage): Promise<DeliveryResult> {
-    // SMTP implementation using nodemailer
-    // This would use nodemailer to send emails via SMTP
-    throw new Error('SMTP provider not implemented yet');
+    const nodemailer = await import('nodemailer');
+    
+    const transporter = nodemailer.createTransporter({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+    
+    const to = message.data?.email || message.data?.to;
+    if (!to) {
+      throw new Error('Email recipient not specified');
+    }
+    
+    const mailOptions = {
+      from: `${this.config.from.name} <${this.config.from.email}>`,
+      to,
+      subject: message.subject || 'Notification from ZKFair',
+      text: message.body,
+      html: message.html || message.body,
+      replyTo: this.config.replyTo,
+      attachments: message.attachments?.map(att => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+      })),
+      headers: {
+        'X-Event-ID': message.eventId,
+        'X-User-ID': message.userId || 'system',
+      },
+    };
+    
+    const info = await transporter.sendMail(mailOptions);
+    
+    return {
+      success: true,
+      messageId: info.messageId,
+      timestamp: Date.now(),
+      details: {
+        provider: 'smtp',
+        response: info.response,
+        accepted: info.accepted,
+        rejected: info.rejected,
+      }
+    };
   }
 
   async verify(email: string): Promise<boolean> {

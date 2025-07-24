@@ -27,6 +27,7 @@ const navigation: NavItem[] = [
   { name: 'Smart Wallets', href: '/admin/wallets', icon: CubeTransparentIcon },
   { name: 'Transactions', href: '/admin/transactions', icon: DocumentTextIcon },
   { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
+  { name: 'Notifications', href: '/admin/notifications', icon: BellIcon },
   { name: 'Security', href: '/admin/security', icon: ShieldCheckIcon },
   { name: 'System', href: '/admin/system', icon: CogIcon },
   { name: 'Alerts', href: '/admin/alerts', icon: BellIcon },

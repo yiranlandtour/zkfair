@@ -18,6 +18,8 @@ import { AdminSmartWallets } from './pages/Admin/SmartWallets';
 import { AdminAnalytics } from './pages/Admin/Analytics';
 import { AdminSecurity } from './pages/Admin/Security';
 import { AdminAlerts } from './pages/Admin/Alerts';
+import { NotificationCenter } from './pages/Admin/NotificationCenter';
+import { AdvancedWallet } from './components/wallet/AdvancedWallet';
 
 const zkFairChain: Chain = {
   id: 67890,
@@ -71,6 +73,11 @@ function App() {
                       <Dashboard />
                     </div>
                   } />
+                  <Route path="/wallet" element={
+                    <div className="container mx-auto px-4 py-8">
+                      <AdvancedWallet />
+                    </div>
+                  } />
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="users" element={<AdminUsers />} />
@@ -80,6 +87,7 @@ function App() {
                     <Route path="security" element={<AdminSecurity />} />
                     <Route path="alerts" element={<AdminAlerts />} />
                     <Route path="system" element={<AdminSystem />} />
+                    <Route path="notifications" element={<NotificationCenter />} />
                   </Route>
                 </Routes>
               </main>

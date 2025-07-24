@@ -2,11 +2,14 @@ import { ethers } from 'ethers';
 import { PrismaClient } from '@prisma/client';
 import { EntryPoint__factory } from '@account-abstraction/contracts';
 import { WebSocketServer } from '../websocket/WebSocketServer';
+import { NotificationService } from './notificationService';
+import { NotificationEvent, NotificationType } from '../types/notification';
 
 export class EventListener {
   private entryPoint: ethers.Contract;
   private lastProcessedBlock: number = 0;
   private wsServer?: WebSocketServer;
+  private notificationService?: NotificationService;
   
   constructor(
     private provider: ethers.Provider,
@@ -18,6 +21,10 @@ export class EventListener {
   
   setWebSocketServer(wsServer: WebSocketServer) {
     this.wsServer = wsServer;
+  }
+  
+  setNotificationService(notificationService: NotificationService) {
+    this.notificationService = notificationService;
   }
 
   async start() {

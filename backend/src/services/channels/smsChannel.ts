@@ -121,8 +121,44 @@ export class SMSChannel implements NotificationChannel {
     message: string,
     notification: NotificationMessage
   ): Promise<DeliveryResult> {
-    // AWS SNS implementation
-    throw new Error('AWS SNS provider not implemented yet');
+    const AWS = await import('aws-sdk');
+    const sns = new AWS.SNS({ region: process.env.AWS_REGION || 'us-east-1' });
+    
+    const params = {
+      Message: message,
+      PhoneNumber: phoneNumber,
+      MessageAttributes: {
+        'AWS.SNS.SMS.SMSType': {
+          DataType: 'String',
+          StringValue: 'Transactional', // or 'Promotional'
+        },
+        'AWS.SNS.SMS.SenderID': {
+          DataType: 'String',
+          StringValue: 'ZKFair',
+        },
+        'eventId': {
+          DataType: 'String',
+          StringValue: notification.eventId,
+        },
+        'userId': {
+          DataType: 'String',
+          StringValue: notification.userId || 'system',
+        },
+      },
+    };
+    
+    const result = await sns.publish(params).promise();
+    
+    return {
+      success: true,
+      messageId: result.MessageId,
+      timestamp: Date.now(),
+      details: {
+        provider: 'sns',
+        region: process.env.AWS_REGION || 'us-east-1',
+        sequenceNumber: result.SequenceNumber,
+      }
+    };
   }
 
   private async sendViaMessageBird(
@@ -130,8 +166,39 @@ export class SMSChannel implements NotificationChannel {
     message: string,
     notification: NotificationMessage
   ): Promise<DeliveryResult> {
-    // MessageBird implementation
-    throw new Error('MessageBird provider not implemented yet');
+    const messagebird = await import('messagebird');
+    const client = messagebird.default(process.env.MESSAGEBIRD_API_KEY!);
+    
+    return new Promise((resolve, reject) => {
+      client.messages.create(
+        {
+          originator: this.config.fromNumber,
+          recipients: [phoneNumber],
+          body: message,
+          reference: notification.eventId,
+          reportUrl: this.config.statusCallbackUrl,
+        },
+        (err: any, response: any) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          
+          resolve({
+            success: true,
+            messageId: response.id,
+            timestamp: Date.now(),
+            details: {
+              provider: 'messagebird',
+              href: response.href,
+              direction: response.direction,
+              type: response.type,
+              gateway: response.gateway,
+            }
+          });
+        }
+      );
+    });
   }
 
   async verify(phoneNumber: string): Promise<boolean> {

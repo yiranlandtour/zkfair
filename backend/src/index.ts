@@ -12,6 +12,9 @@ import { statsRouter } from './routes/stats';
 import { healthRouter } from './routes/health';
 import { EventListener } from './services/eventListener';
 import { WebSocketServer } from './websocket/WebSocketServer';
+import { NotificationService } from './services/notificationService';
+import { notificationConfig } from './config/notifications';
+import { notificationRouter } from './routes/notificationRoutes';
 import { authenticate, authenticateApiKey } from './middleware/auth';
 import { 
   sanitizeInput, 
@@ -74,6 +77,7 @@ app.use('/api/health', healthRouter);
 // Authenticated routes (supports both JWT and API key)
 app.use('/api/transactions', authenticate, transactionRouter);
 app.use('/api/stats', authenticate, statsRouter);
+app.use('/api/notifications', authenticate, notificationRouter);
 
 app.get('/', (req, res) => {
   res.json({ 
@@ -112,9 +116,14 @@ async function startServer() {
   const wsServer = new WebSocketServer(httpServer, provider);
   console.log('WebSocket server initialized');
   
+  // Start notification service
+  const notificationService = new NotificationService(notificationConfig);
+  console.log('Notification service initialized');
+  
   // Start event listener with WebSocket integration
   const eventListener = new EventListener(provider, prisma);
   eventListener.setWebSocketServer(wsServer);
+  eventListener.setNotificationService(notificationService);
   await eventListener.start();
   console.log('Event listener started');
   

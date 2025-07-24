@@ -167,9 +167,61 @@ export class PushChannel implements NotificationChannel {
     token: string,
     message: NotificationMessage
   ): Promise<DeliveryResult> {
-    // Direct APNs implementation for iOS
-    // This would use the APNs HTTP/2 API directly
-    throw new Error('Direct APNs provider not implemented yet');
+    const apn = await import('apn');
+    
+    if (!this.config.apns) {
+      throw new Error('APNs configuration not provided');
+    }
+    
+    const options = {
+      token: {
+        key: this.config.apns.privateKey,
+        keyId: this.config.apns.keyId,
+        teamId: this.config.apns.teamId,
+      },
+      production: this.config.apns.production,
+    };
+    
+    const apnProvider = new apn.Provider(options);
+    const notification = new apn.Notification();
+    
+    notification.alert = {
+      title: message.title || message.subject || 'ZKFair Notification',
+      body: message.body,
+    };
+    notification.badge = message.data?.badge;
+    notification.sound = this.config.defaultSound || 'default';
+    notification.contentAvailable = true;
+    notification.payload = {
+      eventId: message.eventId,
+      type: message.data?.type || '',
+      ...message.data,
+    };
+    notification.topic = process.env.IOS_BUNDLE_ID || 'com.zkfair.app';
+    notification.expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour
+    notification.priority = 10; // High priority
+    
+    try {
+      const result = await apnProvider.send(notification, token);
+      await apnProvider.shutdown();
+      
+      if (result.failed.length > 0) {
+        const failure = result.failed[0];
+        throw new Error(`APNs error: ${failure.status} - ${failure.response?.reason}`);
+      }
+      
+      return {
+        success: true,
+        messageId: result.sent[0].device,
+        timestamp: Date.now(),
+        details: {
+          provider: 'apns',
+          sent: result.sent.length,
+        }
+      };
+    } finally {
+      apnProvider.shutdown();
+    }
   }
 
   async verify(token: string): Promise<boolean> {

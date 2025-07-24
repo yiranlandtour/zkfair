@@ -1,0 +1,42 @@
+[
+  {
+    "email": "test1@zkfair.com",
+    "password": "TestPassword123!",
+    "role": "user"
+  },
+  {
+    "email": "test2@zkfair.com",
+    "password": "TestPassword123!",
+    "role": "user"
+  },
+  {
+    "email": "test3@zkfair.com",
+    "password": "TestPassword123!",
+    "role": "user"
+  },
+  {
+    "email": "test4@zkfair.com",
+    "password": "TestPassword123!",
+    "role": "user"
+  },
+  {
+    "email": "test5@zkfair.com",
+    "password": "TestPassword123!",
+    "role": "user"
+  },
+  {
+    "email": "premium1@zkfair.com",
+    "password": "PremiumPassword123!",
+    "role": "premium"
+  },
+  {
+    "email": "premium2@zkfair.com",
+    "password": "PremiumPassword123!",
+    "role": "premium"
+  },
+  {
+    "email": "admin@zkfair.com",
+    "password": "AdminPassword123!",
+    "role": "admin"
+  }
+]
